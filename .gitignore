@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# Binary outputs
+main
+*.exe
+*.exe.*
+*.out
+*.app
+
+# OS / Editor files
+.DS_Store
+*.log
+.idea/
+.vscode/
