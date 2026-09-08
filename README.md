@@ -43,7 +43,7 @@ SMTP_PORT=587
 
 # Groq AI Configuration
 GROQ_API_KEY=your_groq_api_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=groq/compound
 ```
 
 ---
