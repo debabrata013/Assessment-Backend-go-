@@ -1,0 +1,98 @@
+---
+name: Secure Go Application - Build and Trivy Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. Checkout source code
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # 2. Setup Go
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+          cache: true
+
+      # 3. Download Go dependencies
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Prepare CI outputs
+        run: mkdir -p ci-outputs
+
+      # 4. GoSec security analysis
+      - name: Run GoSec
+        run: |
+          set -o pipefail
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec ./... 2>&1 | tee ci-outputs/gosec.txt
+
+      # 5. Static analysis
+      - name: Run Staticcheck
+        run: |
+          set -o pipefail
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./... 2>&1 | tee ci-outputs/staticcheck.txt
+
+      # 6. Unit tests
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          go test ./... -v 2>&1 | tee ci-outputs/unit-tests.txt
+
+      # 7. Build Go application
+      - name: Build Go application
+        run: |
+          set -o pipefail
+          go build -o app . 2>&1 | tee ci-outputs/go-build.txt
+
+      # 8. Install Trivy
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.3
+
+      # 9. Scan source code / filesystem
+      - name: Trivy Filesystem Scan
+        run: |
+          set -o pipefail
+          trivy fs \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed \
+            . 2>&1 | tee ci-outputs/trivy-filesystem.txt
+
+      # 10. Build Docker image
+      - name: Build Docker image
+        run: |
+          set -o pipefail
+          docker build -t go-app:${{ github.sha }} . 2>&1 | tee ci-outputs/docker-build.txt
+
+      # 11. Scan Docker image
+      - name: Trivy Docker Image Scan
+        run: |
+          set -o pipefail
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed \
+            go-app:${{ github.sha }} 2>&1 | tee ci-outputs/trivy-image.txt
+
+      # Upload command outputs even when an earlier check fails.
+      - name: Upload CI outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-outputs
+          path: ci-outputs/
+          retention-days: 3
+
