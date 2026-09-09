@@ -48,8 +48,9 @@ func main() {
 
 	serverAddr := fmt.Sprintf(":%s", cfg.Port)
 	server := &http.Server{
-		Addr:    serverAddr,
-		Handler: router,
+		Addr:              serverAddr,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Run HTTP server in goroutine

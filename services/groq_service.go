@@ -139,7 +139,7 @@ Return ONLY a JSON object strictly matching this schema:
 		}
 
 		bodyBytes, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read Groq response body: %w", err)
