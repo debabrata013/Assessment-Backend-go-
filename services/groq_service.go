@@ -62,7 +62,7 @@ type GeneratedQuestionsPayload struct {
 // GenerateQuestions calls Groq API with fallback models to generate structured MCQ practice questions
 func (g *GroqService) GenerateQuestions(domain string, hardness string, count int, jobDescription string) ([]models.Question, error) {
 	if g.cfg.GroqAPIKey == "" {
-		return nil, errors.New("GROQ_API_KEY is not configured in environment")
+		return nil, errors.New("groq API key is not configured in environment")
 	}
 
 	jdPrompt := ""
@@ -147,7 +147,7 @@ Return ONLY a JSON object strictly matching this schema:
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("Groq API returned HTTP status %d for model %s: %s", resp.StatusCode, modelName, string(bodyBytes))
+			lastErr = fmt.Errorf("groq API returned HTTP status %d for model %s: %s", resp.StatusCode, modelName, string(bodyBytes))
 			log.Printf("Notice: Model %s failed: %v. Retrying with fallback...\n", modelName, lastErr)
 			continue
 		}
@@ -159,12 +159,12 @@ Return ONLY a JSON object strictly matching this schema:
 		}
 
 		if groqResp.Error != nil {
-			lastErr = fmt.Errorf("Groq API error for model %s: %s", modelName, groqResp.Error.Message)
+			lastErr = fmt.Errorf("groq API error for model %s: %s", modelName, groqResp.Error.Message)
 			continue
 		}
 
 		if len(groqResp.Choices) == 0 {
-			lastErr = fmt.Errorf("Groq API returned empty completion choices for model %s", modelName)
+			lastErr = fmt.Errorf("groq API returned empty completion choices for model %s", modelName)
 			continue
 		}
 
@@ -177,7 +177,7 @@ Return ONLY a JSON object strictly matching this schema:
 		}
 
 		if len(questionsPayload.Questions) == 0 {
-			lastErr = fmt.Errorf("Groq AI failed to generate any questions for model %s", modelName)
+			lastErr = fmt.Errorf("groq AI failed to generate any questions for model %s", modelName)
 			continue
 		}
 
