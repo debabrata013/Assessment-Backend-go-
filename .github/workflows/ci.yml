@@ -59,7 +59,7 @@ jobs:
 
       # 8. Install Trivy
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.2.3
+        uses: aquasecurity/setup-trivy@v0.3.1
 
       # 9. Scan source code / filesystem
       - name: Trivy Filesystem Scan
@@ -95,4 +95,3 @@ jobs:
           name: ci-outputs
           path: ci-outputs/
           retention-days: 3
-
