@@ -26,8 +26,9 @@ jobs:
       # 3. Show Go version
       - name: Check Go version
         run: |
+          which go
           go version
-          go env
+          go env GOVERSION
 
       # 4. Download Go dependencies
       - name: Download dependencies
