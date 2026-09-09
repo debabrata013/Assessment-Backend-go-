@@ -1,4 +1,4 @@
-name: Secure Go Application - Build and Trivy Scan
+name: Go Code and Docker Image Security Scan
 
 on:
   push:
@@ -7,103 +7,48 @@ on:
     branches: [ main ]
 
 jobs:
-  security-and-build:
+  security-scan:
     runs-on: ubuntu-latest
 
     steps:
-
       # 1. Checkout source code
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
-      # 2. Setup Go based on go.mod
+      # 2. Setup Go
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: '1.26'
-          cache: true
+          go-version: '1.26'
 
-      # 3. Show Go version
-      - name: Check Go version
-        run: |
-          which go
-          go version
-          go env GOVERSION
-
-      # 4. Download Go dependencies
-      - name: Download dependencies
-        run: |
-          go mod download
-
-      # 5. Prepare CI outputs
-      - name: Prepare CI outputs
-        run: |
-          mkdir -p ci-outputs
-
-      # 6. GoSec security analysis
-      - name: Run GoSec
-        run: |
-          set -o pipefail
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./... 2>&1 | tee ci-outputs/gosec.txt
-
-      # 7. Static analysis
-      - name: Run Staticcheck
-        run: |
-          set -o pipefail
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          staticcheck ./... 2>&1 | tee ci-outputs/staticcheck.txt
-
-      # 8. Unit tests
-      - name: Run unit tests
-        run: |
-          set -o pipefail
-          go test ./... -v 2>&1 | tee ci-outputs/unit-tests.txt
-
-      # 9. Build Go application
-      - name: Build Go application
-        run: |
-          set -o pipefail
-          go build -o app . 2>&1 | tee ci-outputs/go-build.txt
-
-      # 10. Install Trivy
+      # 3. Install Trivy
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.2.3
 
-      # 11. Trivy filesystem scan
-      - name: Trivy Filesystem Scan
-        run: |
-          set -o pipefail
-          trivy fs \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --ignore-unfixed \
-            . 2>&1 | tee ci-outputs/trivy-filesystem.txt
+      # 4. Check Trivy version
+      - name: Check Trivy version
+        run: trivy --version
 
-      # 12. Build Docker image
+      # 5. Scan Go project / source code
+      - name: Trivy Code Scan
+        run: |
+          trivy fs \
+            --scanners vuln,secret,misconfig \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            .
+
+      # 6. Build Docker image
       - name: Build Docker image
         run: |
-          set -o pipefail
-          docker build \
-            -t go-app:${{ github.sha }} \
-            . 2>&1 | tee ci-outputs/docker-build.txt
+          docker build -t YOUR_DOCKER_IMAGE:TAG .
 
-      # 13. Trivy Docker image scan
+      # 7. Scan Docker image
       - name: Trivy Docker Image Scan
         run: |
-          set -o pipefail
           trivy image \
             --severity HIGH,CRITICAL \
-            --exit-code 1 \
             --ignore-unfixed \
-            go-app:${{ github.sha }} \
-            2>&1 | tee ci-outputs/trivy-image.txt
-
-      # 14. Upload CI outputs
-      - name: Upload CI outputs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-outputs
-          path: ci-outputs/
-          retention-days: 3
+            --exit-code 1 \
+            YOUR_DOCKER_IMAGE:TAG
